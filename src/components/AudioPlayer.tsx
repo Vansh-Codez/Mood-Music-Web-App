@@ -131,9 +131,23 @@ export default function AudioPlayer({ track, onSkip, reason }: { track: Track | 
           
           <div className="flex items-center gap-3 w-full text-xs text-gray-400 font-medium">
             <span>{currentTimeStr}</span>
-            <div className="flex-1 h-1.5 bg-gray-800 rounded-full overflow-hidden relative cursor-not-allowed">
-              <div className="absolute top-0 left-0 h-full bg-blue-500 rounded-full" style={{ width: `${progress}%` }} />
-            </div>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={progress || 0}
+              onChange={async (e) => {
+                const newProgress = Number(e.target.value);
+                setProgress(newProgress);
+                if (player) {
+                  const duration = await player.getDuration();
+                  if (duration) {
+                    player.seekTo((newProgress / 100) * duration, true);
+                  }
+                }
+              }}
+              className="flex-1 h-1.5 bg-gray-700 rounded-full appearance-none cursor-pointer accent-blue-500"
+            />
             <span>{durationStr}</span>
           </div>
         </div>

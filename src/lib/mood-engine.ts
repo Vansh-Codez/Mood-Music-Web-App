@@ -1,17 +1,19 @@
 import { Track, mockTracks, Mood } from './mock-database';
 export type { Mood };
 
-export function getRandomTrackForMood(mood: Mood, previousTrackId?: string): Track | null {
+export function getQueueForMood(mood: Mood): Track[] {
   const matchingTracks = mockTracks.filter((track) => track.moods.includes(mood));
   
-  if (matchingTracks.length === 0) return null;
-  if (matchingTracks.length === 1) return matchingTracks[0];
+  if (matchingTracks.length === 0) return [];
 
-  const availableTracks = matchingTracks.filter(t => t.id !== previousTrackId);
-  const pool = availableTracks.length > 0 ? availableTracks : matchingTracks;
-
-  const randomIndex = Math.floor(Math.random() * pool.length);
-  return pool[randomIndex];
+  // Fisher-Yates shuffle
+  const shuffled = [...matchingTracks];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  
+  return shuffled;
 }
 
 export function analyzeTextToMood(text: string): Mood {
