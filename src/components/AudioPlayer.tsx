@@ -31,7 +31,7 @@ export default function AudioPlayer({ track, onSkip, reason }: { track: Track | 
             setCurrentTimeStr(formatTime(current));
             setDurationStr(formatTime(duration));
           }
-        } catch (e) {}
+        } catch {}
       }, 1000);
     }
     return () => clearInterval(interval);

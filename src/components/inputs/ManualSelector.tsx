@@ -2,7 +2,6 @@
 import { MOODS, Mood } from '@/lib/mock-database';
 import { Smile, Frown, Zap, Coffee, Target, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { MOOD_COLORS } from '@/lib/mood-engine';
 
 const MOOD_ICONS: Record<Mood, React.ReactNode> = {
   Happy: <Smile size={24} />,
