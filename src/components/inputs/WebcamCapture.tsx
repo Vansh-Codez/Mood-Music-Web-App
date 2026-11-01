@@ -280,56 +280,42 @@ export default function WebcamCapture({ onMoodSelect }: { onMoodSelect: (mood: M
   // Immediate Click-to-Detect Handler
   const captureAndDetect = async () => {
     const video = videoRef.current;
-    if (!video) {
+    if (!video || !isCameraOn) {
       alert("Please start the camera first.");
       return;
     }
 
+    // 1. If we already have an active live emotion detected, apply it INSTANTLY!
+    if (liveEmotion && faceDetected) {
+      onMoodSelect(liveEmotion.mood, `Camera detected: ${liveEmotion.label} (${liveEmotion.confidence}% confidence)`);
+      setJustApplied(true);
+      setTimeout(() => setJustApplied(false), 2500);
+      return;
+    }
+
+    // 2. Otherwise (if clicked before first live frame finished), process frame now
     setIsDetecting(true);
     try {
-      // Pause background loop during manual capture
-      if (timerRef.current) clearTimeout(timerRef.current);
+      let analysis = await processFrame();
 
-      // Ensure models loaded
-      if (!faceapi.nets.ssdMobilenetv1.isLoaded) {
-        await faceapi.nets.ssdMobilenetv1.loadFromUri('/models');
-      }
-      if (!faceapi.nets.faceExpressionNet.isLoaded) {
-        await faceapi.nets.faceExpressionNet.loadFromUri('/models');
+      // Quick retry if needed
+      if (!analysis) {
+        await new Promise((r) => setTimeout(r, 200));
+        analysis = await processFrame();
       }
 
-      // Direct detection with high sensitivity
-      let detection = await faceapi.detectSingleFace(
-        video,
-        new faceapi.SsdMobilenetv1Options({ minConfidence: 0.1 })
-      ).withFaceExpressions();
-
-      if (!detection && faceapi.nets.tinyFaceDetector.isLoaded) {
-        detection = await faceapi.detectSingleFace(
-          video,
-          new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.1 })
-        ).withFaceExpressions();
-      }
-
-      if (detection && detection.expressions) {
-        const calibrated = calibrateExpressions(detection.expressions);
-        setFaceDetected(true);
-        setLiveEmotion(calibrated);
-        onMoodSelect(calibrated.mood, `Camera detected: ${calibrated.label} (${calibrated.confidence}% confidence)`);
+      if (analysis) {
+        onMoodSelect(analysis.mood, `Camera detected: ${analysis.label} (${analysis.confidence}% confidence)`);
         setJustApplied(true);
         setTimeout(() => setJustApplied(false), 2500);
       } else {
         alert("Could not detect a face clearly. Try looking directly at the camera with good room lighting.");
       }
     } catch (error) {
-      console.error("Manual detection error:", error);
+      console.error("Detection error:", error);
       alert("Failed to analyze facial expression. Please try again.");
     } finally {
       setIsDetecting(false);
-      // Resume background loop
-      if (isCameraActiveRef.current) {
-        runDetectionLoop();
-      }
     }
   };
 
@@ -455,6 +441,8 @@ export default function WebcamCapture({ onMoodSelect }: { onMoodSelect: (mood: M
               <><Loader2 className="animate-spin" size={18} /> Analyzing Expression...</>
             ) : justApplied ? (
               <><Check size={18} /> Mood Applied!</>
+            ) : liveEmotion && faceDetected ? (
+              <><ScanFace size={18} /> Play {liveEmotion.mood} Music</>
             ) : (
               <><ScanFace size={18} /> Detect & Play Music</>
             )}
