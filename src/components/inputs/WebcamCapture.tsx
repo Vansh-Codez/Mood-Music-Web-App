@@ -161,7 +161,14 @@ export default function WebcamCapture({ onMoodSelect }: { onMoodSelect: (mood: M
 
     return () => {
       isMounted = false;
-      stopCamera();
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+      }
     };
   }, []);
 
@@ -346,7 +353,7 @@ export default function WebcamCapture({ onMoodSelect }: { onMoodSelect: (mood: M
             </div>
             <div>
               <p className="font-semibold text-gray-200 text-base">Camera is Offline</p>
-              <p className="text-xs text-gray-400 mt-1">Click "Start Camera" to detect your mood via facial expressions</p>
+              <p className="text-xs text-gray-400 mt-1">Click &quot;Start Camera&quot; to detect your mood via facial expressions</p>
             </div>
           </div>
         )}
